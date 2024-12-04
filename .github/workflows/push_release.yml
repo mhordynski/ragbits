@@ -33,6 +33,6 @@ jobs:
 
       - name: Publish release
         run: |
-          gh release create v${{ steps.tag_name.outputs.new_tag }} \
-            --title v${{ github.event.pull_request.head.ref }}" \
+          gh release create {{ steps.tag_name.outputs.new_tag }} \
+            --title ${{ steps.tag_name.outputs.new_tag }}" \
             --notes-file RELEASE_NOTES.md
