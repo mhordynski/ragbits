@@ -24,7 +24,8 @@ jobs:
       - name: Get tag name
         id: tag_name
         run: |
-          echo "::set-output name=new_tag::$(echo "${{ github.event.pull_request.head.ref }}" | sed 's/.*-//')"
+          TAG_NAME=$(echo "${{ github.event.pull_request.head.ref }}" | sed 's/.*-//')
+          echo "new_tag=$TAG_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Create release notes
         run: |
