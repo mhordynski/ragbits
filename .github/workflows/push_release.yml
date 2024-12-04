@@ -36,3 +36,5 @@ jobs:
           gh release create ${{ steps.tag_name.outputs.new_tag }} \
             --title "${{ steps.tag_name.outputs.new_tag }}" \
             --notes-file RELEASE_NOTES.md
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
