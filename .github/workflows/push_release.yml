@@ -33,6 +33,6 @@ jobs:
 
       - name: Publish release
         run: |
-          gh release create {{ steps.tag_name.outputs.new_tag }} \
-            --title ${{ steps.tag_name.outputs.new_tag }}" \
+          gh release create ${{ steps.tag_name.outputs.new_tag }} \
+            --title "${{ steps.tag_name.outputs.new_tag }}" \
             --notes-file RELEASE_NOTES.md
