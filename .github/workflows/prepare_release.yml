@@ -1,4 +1,4 @@
-name: Semantic Release
+name: Prepare Release
 
 on:
   workflow_dispatch:
@@ -51,8 +51,8 @@ jobs:
 
       - name: Create release branch
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "ds-ragbits-robot"
+          git config user.email "ds-ragbits-robot@users.noreply.github.com"
           git checkout -b release/${{ github.event.inputs.packageName }}-v${{ steps.packages_update.outputs.new_version }}
 
       - name: Create PR with updated packages

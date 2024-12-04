@@ -1,0 +1,21 @@
+name: Push Release
+
+on:
+  pull_request_target:
+    types:
+      - closed
+jobs:
+  printJob:
+    name: Print event
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: |
+          echo "$GITHUB_CONTEXT"
+  run_if:
+    if: startsWith(github.head_ref, 'release/') && github.event.pull_request.merged == true && github.event.pull_request.user.login == 'ds-ragbits-robot'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "The is PR for us to push the release"
