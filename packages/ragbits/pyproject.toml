@@ -1,6 +1,6 @@
 [project]
 name = "ragbits"
-version = "0.4.0"
+version = "0.4.1"
 description = "Building blocks for rapid development of GenAI applications"
 dynamic = ["readme"]
 requires-python = ">=3.10"
@@ -74,6 +74,9 @@ qdrant = [
 ]
 relari = [
     "continuous-eval~=0.3.12",
+]
+distributed = [
+    "ray>=2.39.0",
 ]
 
 [build-system]
