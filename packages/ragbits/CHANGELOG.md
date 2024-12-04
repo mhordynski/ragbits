@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.4.2 (2024-12-04)
+
+### Changed
+
+- ragbits-cli updated to version v0.4.1
+- ragbits-document-search updated to version v0.4.1
+- ragbits-evaluate updated to version v0.4.1
+- ragbits-guardrails updated to version v0.4.1
+- ragbits-core updated to version v0.4.1
+
 ## 0.4.1 (2024-12-04)
 
 ## 0.4.0 (2024-11-27)
