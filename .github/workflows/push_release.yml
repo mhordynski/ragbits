@@ -38,3 +38,14 @@ jobs:
             --notes-file RELEASE_NOTES.md
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Build packages
+        run: |
+          for dir in packages/*/; do uv build "$dir" --out-dir dist; done
+
+      - name: Publish packages
+        run: |
+          uv tool run twine upload dist/*
+        env:
+            TWINE_USERNAME: __token__
+            TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
