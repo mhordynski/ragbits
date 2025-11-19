@@ -1,4 +1,7 @@
-name: Prepare Release
+name: Prepare Release (Individual Package - DEPRECATED)
+
+# ⚠️ DEPRECATED: Use release-stable.yml for stable releases or release-patch.yml for hotfixes
+# This workflow is kept for backwards compatibility but is no longer recommended
 
 on:
   workflow_dispatch:

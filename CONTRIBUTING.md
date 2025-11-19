@@ -1,6 +1,58 @@
-# Installation
+# Contributing to Ragbits
 
-## Build from source
+Thank you for your interest in contributing to Ragbits! This document outlines the development workflow and guidelines.
+
+## Branching Strategy
+
+We use **trunk-based development** with the following approach:
+
+### Main Branch (`main`)
+- **Default branch** for all development work
+- All feature branches should be created from and merged into `main`
+- Nightly builds are published automatically from `main`
+- Always in a releasable state
+
+### Creating Pull Requests
+1. Fork the repository or create a feature branch from `main`:
+   ```bash
+   git checkout main
+   git pull origin main
+   git checkout -b feature/your-feature-name
+   ```
+
+2. Make your changes and commit them with descriptive messages
+
+3. Push your branch and create a PR targeting `main`:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+4. Your PR will be reviewed and, once approved, merged into `main`
+
+### Release Process
+
+#### Stable Releases (Major/Minor)
+Stable releases are created using the GitHub Actions workflow:
+- Trigger the **"Stable Release"** workflow from the Actions tab
+- Choose version type (major or minor)
+- A PR will be created automatically with version bumps and changelog updates
+- After review and merge, the release is automatically tagged and published to PyPI
+
+#### Hotfix/Patch Releases
+For urgent bug fixes:
+- Trigger the **"Patch Release (Hotfix)"** workflow from the Actions tab
+- Provide a brief description of the fix
+- A PR will be created with patch version bumps
+- After merge, the hotfix is automatically published
+
+#### Nightly Builds
+- Published automatically from `main` every day at 2 AM UTC
+- Install with: `pip install ragbits --pre`
+- Version format: `X.Y.Z.devYYYYMMDDHHMM`
+
+## Installation
+
+### Build from source
 
 Dependencies needed to build and run Ragbits from the source code:
 

@@ -13,10 +13,10 @@ jobs:
       commit-hash: ${{ steps.check.outputs.commit-hash }}
       nightly-version: ${{ steps.check.outputs.nightly-version }}
     steps:
-      - name: Checkout develop branch
+      - name: Checkout main branch
         uses: actions/checkout@v4
         with:
-          ref: develop
+          ref: main
           fetch-depth: 0
 
       - name: Check if nightly build needed
@@ -62,10 +62,10 @@ jobs:
     if: needs.check-for-changes.outputs.should-build == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout develop branch
+      - name: Checkout main branch
         uses: actions/checkout@v4
         with:
-          ref: develop
+          ref: main
 
       - name: Install uv
         uses: astral-sh/setup-uv@v2

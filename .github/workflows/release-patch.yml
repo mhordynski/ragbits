@@ -1,0 +1,109 @@
+name: Patch Release (Hotfix)
+
+on:
+  workflow_dispatch:
+    inputs:
+      description:
+        description: "Brief description of the hotfix (e.g., 'Fix authentication bug')"
+        required: true
+        type: string
+
+jobs:
+  create-patch-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: ${{ vars.UV_VERSION || '0.6.9' }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Configure Git
+        run: |
+          git config user.name "ds-ragbits-robot"
+          git config user.email "ds-ragbits-robot@users.noreply.github.com"
+
+      - name: Update all packages (patch bump)
+        id: version_update
+        run: |
+          # Update ragbits-core with patch version
+          uv run scripts/update_ragbits_package.py ragbits-core patch
+
+          # Get the new version
+          NEW_VERSION=$(grep 'version =' packages/ragbits-core/pyproject.toml | cut -d '"' -f2 | head -1)
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
+          uv sync
+
+      - name: Add hotfix entry to changelogs
+        run: |
+          # Add hotfix description to all package changelogs
+          for changelog in packages/*/CHANGELOG.md; do
+            if [ -f "$changelog" ]; then
+              sed -i '/## Unreleased/a \\n- fix: ${{ github.event.inputs.description }}' "$changelog"
+            fi
+          done
+
+      - name: Update README for stable release
+        run: |
+          # Update the stable README version
+          mkdir -p .github/readme-versions
+          cp README.md .github/readme-versions/README.stable.md
+          git add .github/readme-versions/
+
+      - name: Create hotfix branch and PR
+        id: create_pr
+        run: |
+          BRANCH_NAME="hotfix/v${{ steps.version_update.outputs.new_version }}"
+
+          git checkout -b "$BRANCH_NAME"
+          git add .
+          git commit -m "fix(all): ${{ github.event.inputs.description }} (v${{ steps.version_update.outputs.new_version }})"
+          git push -u origin "$BRANCH_NAME"
+
+          # Create PR
+          PR_URL=$(gh pr create \
+            --base main \
+            --title "fix: ${{ github.event.inputs.description }} (v${{ steps.version_update.outputs.new_version }})" \
+            --label "hotfix" \
+            --body "$(cat <<'EOF'
+## 🔧 Hotfix Release v${{ steps.version_update.outputs.new_version }}
+
+### Description
+${{ github.event.inputs.description }}
+
+### Changes
+- All packages bumped to patch version v${{ steps.version_update.outputs.new_version }}
+- Hotfix entry added to changelogs
+
+### After Merge
+- Git tag will be created automatically
+- Packages will be published to PyPI
+- GitHub release will be created
+
+**This is a hotfix release and should be merged quickly after review.**
+EOF
+          )")
+
+          echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Output PR details
+        run: |
+          echo "✅ Hotfix PR created: ${{ steps.create_pr.outputs.pr_url }}"
+          echo "📦 Version: v${{ steps.version_update.outputs.new_version }}"
+          echo "🔧 Description: ${{ github.event.inputs.description }}"

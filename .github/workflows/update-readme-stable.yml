@@ -1,0 +1,45 @@
+name: Update Stable README
+
+# This workflow ensures the main README always shows stable release information
+# It runs after a stable release is published
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:  # Manual trigger if needed
+
+jobs:
+  update-stable-readme:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Configure Git
+        run: |
+          git config user.name "ds-ragbits-robot"
+          git config user.email "ds-ragbits-robot@users.noreply.github.com"
+
+      - name: Copy stable README to main
+        run: |
+          # If stable README exists, copy it to main README
+          if [ -f ".github/readme-versions/README.stable.md" ]; then
+            cp .github/readme-versions/README.stable.md README.md
+            git add README.md
+
+            if git diff --cached --quiet; then
+              echo "No changes to README"
+            else
+              git commit -m "docs: update README to stable version"
+              git push origin main
+              echo "✅ README updated to stable version"
+            fi
+          else
+            echo "ℹ️ No stable README found, skipping"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}

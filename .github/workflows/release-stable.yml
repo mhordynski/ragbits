@@ -1,0 +1,116 @@
+name: Stable Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: "Version bump type"
+        required: true
+        type: choice
+        default: "minor"
+        options:
+          - "major"
+          - "minor"
+
+jobs:
+  create-release-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: ${{ vars.UV_VERSION || '0.6.9' }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Configure Git
+        run: |
+          git config user.name "ds-ragbits-robot"
+          git config user.email "ds-ragbits-robot@users.noreply.github.com"
+
+      - name: Update all packages to new version
+        id: version_update
+        run: |
+          # Update ragbits-core (all packages depend on it)
+          uv run scripts/update_ragbits_package.py ragbits-core ${{ github.event.inputs.version_type }}
+
+          # Get the new version from ragbits-core
+          NEW_VERSION=$(grep 'version =' packages/ragbits-core/pyproject.toml | cut -d '"' -f2 | head -1)
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
+          uv sync
+
+      - name: Generate changelog entries
+        run: |
+          # Generate changelog entries for all changed packages
+          uv run scripts/generate_changelog_entries.py main || true
+
+      - name: Update README for stable release
+        run: |
+          # Copy current README to versioned location for stable
+          mkdir -p .github/readme-versions
+          cp README.md .github/readme-versions/README.stable.md
+          git add .github/readme-versions/
+
+      - name: Create release branch and PR
+        id: create_pr
+        run: |
+          BRANCH_NAME="release/v${{ steps.version_update.outputs.new_version }}"
+
+          git checkout -b "$BRANCH_NAME"
+          git add .
+          git commit -m "release(all): update to v${{ steps.version_update.outputs.new_version }}"
+          git push -u origin "$BRANCH_NAME"
+
+          # Create PR
+          PR_URL=$(gh pr create \
+            --base main \
+            --title "release: v${{ steps.version_update.outputs.new_version }}" \
+            --body "$(cat <<'EOF'
+## 🚀 Stable Release v${{ steps.version_update.outputs.new_version }}
+
+This PR prepares a new stable release.
+
+### Changes
+- All packages updated to v${{ steps.version_update.outputs.new_version }}
+- Changelog entries generated
+- README updated for stable release
+
+### After Merge
+- Git tag will be created automatically
+- Packages will be published to PyPI
+- GitHub release will be created
+- Documentation will be deployed
+
+**Please review the changelog entries and version bumps before merging.**
+EOF
+          )")
+
+          echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Output PR details
+        run: |
+          echo "✅ Release PR created: ${{ steps.create_pr.outputs.pr_url }}"
+          echo "📦 Version: v${{ steps.version_update.outputs.new_version }}"
+
+  publish-release:
+    # This job runs when a release PR is merged
+    if: false  # Will be triggered by a separate workflow on PR merge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Placeholder
+        run: echo "This job is triggered by release-stable-publish.yml"

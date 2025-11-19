@@ -1,0 +1,95 @@
+name: Publish Stable Release
+
+on:
+  pull_request_target:
+    branches:
+      - main
+    types:
+      - closed
+
+jobs:
+  publish:
+    # Only run if:
+    # 1. PR was merged (not just closed)
+    # 2. Branch name starts with 'release/'
+    # 3. PR author is the bot
+    if: |
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'release/') &&
+      github.event.pull_request.user.login == 'ds-ragbits-robot'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: ${{ vars.UV_VERSION || '0.6.9' }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Extract version from branch name
+        id: version
+        run: |
+          # Extract version from branch name (e.g., release/v1.2.0 -> v1.2.0)
+          VERSION=$(echo "${{ github.event.pull_request.head.ref }}" | sed 's|release/||')
+          echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "version_number=${VERSION#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Create git tag
+        run: |
+          git config user.name "ds-ragbits-robot"
+          git config user.email "ds-ragbits-robot@users.noreply.github.com"
+          git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Create release notes
+        run: |
+          uv run scripts/create_release_notes.py
+
+      - name: Create GitHub release
+        run: |
+          gh release create "${{ steps.version.outputs.tag }}" \
+            --title "Release ${{ steps.version.outputs.tag }}" \
+            --notes-file RELEASE_NOTES.md
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Build all packages
+        run: |
+          for dir in packages/*/; do
+            echo "Building $dir"
+            uv build "$dir" --out-dir dist
+          done
+
+      - name: Publish to PyPI
+        run: |
+          uv tool run twine upload dist/* --verbose
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+
+      - name: Deploy stable documentation
+        run: |
+          uv run mike deploy --push stable
+          uv run mike set-default --push stable
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Notify success
+        run: |
+          echo "✅ Successfully published release ${{ steps.version.outputs.tag }}"
+          echo "📦 Packages published to PyPI"
+          echo "📚 Documentation deployed to stable"
+          echo "🔖 Git tag created: ${{ steps.version.outputs.tag }}"

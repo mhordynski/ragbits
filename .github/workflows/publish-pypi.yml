@@ -1,4 +1,7 @@
-name: Publish release
+name: Publish release (Individual Package - DEPRECATED)
+
+# ⚠️ DEPRECATED: This workflow handles old individual package releases
+# New stable/hotfix releases are handled by release-stable-publish.yml
 
 on:
   pull_request_target:
